@@ -1,0 +1,7 @@
+Django>=5.0,<6.0
+graphene-django>=3.2,<4.0
+# graphene 3.x only supports graphql-core 3.2; 3.3 makes list fields return coroutines (500 errors)
+graphql-core>=3.2,<3.3
+django-cors-headers>=4.3
+# Uncomment for PostgreSQL (set DB_ENGINE=postgres in .env)
+# psycopg[binary]>=3.1
