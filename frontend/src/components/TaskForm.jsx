@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react'
 import { mutate } from '../lib/api'
 import { addDays, nextMonday, toISODate } from '../lib/dates'
 import { cx, PRIORITIES, STATUSES } from '../lib/meta'
+import { findByName, loadMentionables, useMentionables } from '../lib/mentions'
 import { hasTokens, parseQuick } from '../lib/parse'
 import { CONVERT_CAPTURE, CREATE_TASK } from '../lib/queries'
+import MentionField from './MentionField'
 import PersonPicker from './PersonPicker'
 import ProjectPicker from './ProjectPicker'
 import { useToast } from './Toast'
@@ -15,14 +17,18 @@ const EMPTY = {
   project: null, discussion: null, pinned: false,
 }
 
-function mergeParsed(form, parsed) {
+/** Move parsed @/#/!/^ tokens into the form. Names that already exist resolve to the real record. */
+function mergeParsed(form, parsed, known = { people: [], projects: [] }) {
   const names = new Set(form.people.map((p) => p.name.toLowerCase()))
   return {
     ...form,
     title: parsed.title || form.title,
-    people: [...form.people, ...parsed.people.filter((n) => !names.has(n.toLowerCase())).map((name) => ({ name }))],
+    people: [
+      ...form.people,
+      ...parsed.people.filter((n) => !names.has(n.toLowerCase())).map((name) => findByName(known.people, name) || { name }),
+    ],
     priority: parsed.priority || form.priority,
-    project: parsed.project ? { name: parsed.project } : form.project,
+    project: parsed.project ? findByName(known.projects, parsed.project) || { name: parsed.project } : form.project,
     dueDate: parsed.dueDate || form.dueDate,
   }
 }
@@ -64,14 +70,16 @@ export default function TaskForm({ open, onClose, initial, capture, onCreated })
   const [linkDraft, setLinkDraft] = useState({ url: '', title: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const known = useMentionables()
 
   useEffect(() => {
     if (!open) return
+    loadMentionables()
     let start = { ...EMPTY, ...(initial || {}) }
     if (capture) {
       const [firstLine, ...more] = capture.text.split('\n')
       const parsed = parseQuick(firstLine)
-      start = mergeParsed({ ...start, title: '' }, parsed)
+      start = mergeParsed({ ...start, title: '' }, parsed, known)
       start.title = parsed.title || firstLine
       if (more.length) start.description = more.join('\n').trim()
       if (capture.discussion) start.discussion = capture.discussion
@@ -82,18 +90,29 @@ export default function TaskForm({ open, onClose, initial, capture, onCreated })
     setSubDraft('')
     setLinkDraft({ url: '', title: '' })
     setError(null)
-  }, [open, initial, capture])
+  }, [open, initial, capture]) // eslint-disable-line react-hooks/exhaustive-deps -- `known` is read once on open
+
+  // When the shared cache (re)loads, link any "(new)" names that actually exist.
+  useEffect(() => {
+    setForm((f) => {
+      const people = f.people.map((p) => (p.id ? p : findByName(known.people, p.name) || p))
+      const requestedBy = f.requestedBy && !f.requestedBy.id ? findByName(known.people, f.requestedBy.name) || f.requestedBy : f.requestedBy
+      const project = f.project && !f.project.id ? findByName(known.projects, f.project.name) || f.project : f.project
+      const changed = people.some((p, i) => p !== f.people[i]) || requestedBy !== f.requestedBy || project !== f.project
+      return changed ? { ...f, people, requestedBy, project } : f
+    })
+  }, [known])
 
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }))
   const parsedPreview = parseQuick(form.title)
 
   const applyTokens = () => {
-    if (hasTokens(parsedPreview)) setForm((f) => mergeParsed(f, parseQuick(f.title)))
+    if (hasTokens(parsedPreview)) setForm((f) => mergeParsed(f, parseQuick(f.title), known))
   }
 
   const submit = async (e) => {
     e?.preventDefault()
-    const f = hasTokens(parseQuick(form.title)) ? mergeParsed(form, parseQuick(form.title)) : form
+    const f = hasTokens(parseQuick(form.title)) ? mergeParsed(form, parseQuick(form.title), known) : form
     if (!f.title.trim()) { setError('Give the task a short, clear title.'); return }
     const pendingSubs = subDraft.trim() ? [...subtasks, subDraft.trim()] : subtasks
     const pendingLinks = linkDraft.url.trim() ? [...links, linkDraft] : links
@@ -154,7 +173,7 @@ export default function TaskForm({ open, onClose, initial, capture, onCreated })
         {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{error}</p>}
 
         <div>
-          <input
+          <MentionField
             autoFocus
             value={form.title}
             onChange={(e) => set('title')(e.target.value)}

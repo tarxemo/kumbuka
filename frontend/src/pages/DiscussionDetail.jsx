@@ -2,6 +2,7 @@ import { AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Check, ExternalLink, Link2, ListTodo, FileText, Plus, Sparkles, StickyNote, Trash2, X, Zap } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import MentionField from '../components/MentionField'
 import PersonPicker from '../components/PersonPicker'
 import ProjectPicker from '../components/ProjectPicker'
 import TaskRow from '../components/TaskRow'
@@ -199,11 +200,12 @@ export default function DiscussionDetail() {
         <div className="space-y-5">
           <Panel title="Action items to organize" icon={Zap} action={raw.length > 0 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">{raw.length}</span>}>
             <div className="mb-3 flex gap-2">
-              <input
+              <MentionField
+                wrapperClassName="flex-1"
                 value={action}
                 onChange={(e) => setAction(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addAction()}
-                placeholder="Quick action item… (Enter)"
+                placeholder="Quick action item… e.g. send budget to @Asha (Enter)"
                 className="field h-10"
               />
               <Button variant="soft" className="h-10" onClick={addAction}><Plus className="h-4 w-4" /></Button>

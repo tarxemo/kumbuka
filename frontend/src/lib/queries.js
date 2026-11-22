@@ -70,6 +70,8 @@ export const PERSON = `query($id:ID!){ person(id:$id){ id name initials email ph
   doneTasks { ${TASK_FIELDS} }
   recentDiscussions { id title kindLabel occurredAt }
 } }`
+/** Everything @ / # autocomplete needs, in one request (cached in lib/mentions.js). */
+export const MENTIONABLES = `query{ people { id name initials role organization } projects { id name color } }`
 export const GET_OR_CREATE_PERSON = `mutation($name:String!){ getOrCreatePerson(name:$name){ id name initials role } }`
 export const CREATE_PERSON = `mutation($input:PersonInput!){ createPerson(input:$input){ id name } }`
 export const UPDATE_PERSON = `mutation($id:ID!,$input:PersonInput!){ updatePerson(id:$id,input:$input){ id name } }`

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Archive, ArchiveRestore, ArrowRight, Check, Inbox as InboxIcon, MessagesSquare, Pencil, Sparkles, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import MentionField from '../components/MentionField'
 import { useToast } from '../components/Toast'
 import { Button, EmptyState, ErrorBox, IconButton, Kbd, PageHeader, PageLoader, Segmented } from '../components/ui'
 import { useActions, useOpenTask } from '../lib/actions'
@@ -98,7 +99,8 @@ export default function Inbox() {
       <PageHeader icon={InboxIcon} title="Inbox" subtitle="Rough notes land here. Turn each one into a clear task — or archive it if it's just information." />
 
       <div className="card mb-6 p-2">
-        <textarea
+        <MentionField
+          as="textarea"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); add() } }}

@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import { mutate } from '../lib/api'
 import { dueInfo } from '../lib/dates'
 import { cx, PRIORITY } from '../lib/meta'
+import { findByName, useMentionables } from '../lib/mentions'
 import { hasTokens, parseQuick } from '../lib/parse'
 import { ADD_CAPTURE, CREATE_TASK } from '../lib/queries'
+import MentionField from './MentionField'
 import { useToast } from './Toast'
 import { Kbd, Segmented } from './ui'
 
@@ -27,6 +29,7 @@ export default function QuickCapture({ open, onClose, initialText = '' }) {
   }, [mode])
 
   const parsed = parseQuick(text)
+  const known = useMentionables()
 
   const submit = async () => {
     const value = text.trim()
@@ -84,7 +87,9 @@ export default function QuickCapture({ open, onClose, initialText = '' }) {
                 options={[{ value: 'note', label: 'Rough note', icon: StickyNote }, { value: 'task', label: 'Task', icon: ListTodo }]}
               />
             </div>
-            <textarea
+            <MentionField
+              as="textarea"
+              inline
               ref={ref}
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -97,10 +102,10 @@ export default function QuickCapture({ open, onClose, initialText = '' }) {
             />
             {mode === 'task' && hasTokens(parsed) && (
               <div className="flex flex-wrap gap-1.5 px-5 pb-3">
-                {parsed.people.map((p) => <Chip key={p} icon={User}>{p}</Chip>)}
+                {parsed.people.map((p) => <Chip key={p} icon={User} isNew={!findByName(known.people, p)}>{p}</Chip>)}
                 {parsed.dueDate && <Chip icon={CalendarDays}>{dueInfo(parsed.dueDate).label}</Chip>}
                 {parsed.priority && <Chip icon={Flag} className={PRIORITY[parsed.priority].chip}>{PRIORITY[parsed.priority].label}</Chip>}
-                {parsed.project && <Chip icon={FolderKanban}>{parsed.project}</Chip>}
+                {parsed.project && <Chip icon={FolderKanban} isNew={!findByName(known.projects, parsed.project)}>{parsed.project}</Chip>}
               </div>
             )}
             <AnimatePresence>
@@ -129,10 +134,11 @@ export default function QuickCapture({ open, onClose, initialText = '' }) {
   )
 }
 
-function Chip({ icon: Icon, children, className }) {
+function Chip({ icon: Icon, children, className, isNew }) {
   return (
     <span className={cx('inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200', className)}>
       <Icon className="h-3 w-3" /> {children}
+      {isNew && <span className="text-[10px] opacity-60" title="Not found — will be created">(new)</span>}
     </span>
   )
 }
