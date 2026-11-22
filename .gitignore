@@ -13,6 +13,9 @@ node_modules/
 frontend/dist/
 frontend/.env
 
+# Production compose env (server-side secrets — see .env.prod.example)
+/.env
+
 .DS_Store
 .idea/
 .vscode/

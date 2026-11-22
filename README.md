@@ -64,7 +64,11 @@ SQLite is the default. To use PostgreSQL, uncomment `psycopg[binary]` in `requir
 
 ---
 
-## Deploying (e.g. an Ubuntu server)
+## Deploying
+
+**Production (kumbuka.tarxemo.com):** Docker + GitHub Actions + Caddy. See [DEPLOY.md](DEPLOY.md).
+
+### Manual deploy (any Ubuntu server, without Docker)
 
 1. **Backend**
    - In `backend/.env`, set `DJANGO_DEBUG=False`, a long `DJANGO_SECRET_KEY`, your domain or IP in `DJANGO_ALLOWED_HOSTS`, and your frontend URL in `CORS_ALLOWED_ORIGINS`.
